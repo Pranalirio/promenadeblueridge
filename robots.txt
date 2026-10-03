@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /google-sheet/
+
+Sitemap: https://promenadeblueridge.com/sitemap.xml
