@@ -43,7 +43,7 @@ var CONFIG = {
 
   document.getElementById('yr').textContent = new Date().getFullYear();
 
-  /* ---------- click tracking for call / whatsapp ---------- */
+  /* ---------- click tracking for WhatsApp ---------- */
   document.addEventListener('click', function (e) {
     var t = e.target.closest('[data-track]'); if (t) track('contact_click', { method: t.getAttribute('data-track') });
   });
@@ -75,7 +75,7 @@ var CONFIG = {
 
   /* ---------- modal variants ---------- */
   var VARIANTS = {
-    callback:  { kicker: 'Priority call back', title: 'Get a call back', sub: 'Share your details and our property expert will call you within minutes.', btn: 'Request Call Back' },
+    enquiry:   { kicker: 'Project enquiry', title: 'Send an enquiry', sub: 'Share your details and our property expert will respond on WhatsApp.', btn: 'Send Enquiry' },
     costsheet: { kicker: 'Latest price list', title: 'Download cost sheet', sub: 'Get the complete price break-up, payment plan and current offers.', btn: 'Get Cost Sheet' },
     brochure:  { kicker: 'E-brochure', title: 'Download brochure', sub: 'Floor plans, amenities, specifications and location – all in one PDF.', btn: 'Download Brochure' },
     plan:      { kicker: 'Floor plans', title: 'Unlock detailed floor plan', sub: 'View the dimensioned 2D plan with room sizes and areas.', btn: 'View Floor Plan' },
@@ -85,24 +85,13 @@ var CONFIG = {
 
   var modal = document.getElementById('leadModal');
   var mForm = modal.querySelector('form'), mDone = modal.querySelector('.modal__done');
-  var current = { type: 'callback', config: '', plan: '' };
+  var current = { type: 'enquiry', config: '', plan: '' };
   var lastFocus = null;
 
   function openModal(type, opts) {
     opts = opts || {};
     current = { type: type, config: opts.config || '', plan: opts.plan || '' };
-    var v = VARIANTS[type] || VARIANTS.callback;
-
-    // Returning visitor already shared details → skip the form for downloads
-    var known = sget('pr_lead');
-    if (known && (type === 'brochure' || type === 'costsheet' || type === 'plan')) {
-      try { known = JSON.parse(known); } catch (e) { known = null; }
-      if (known) {
-        submitLead(Object.assign({}, known, { form_type: type + ' (repeat)', configuration: current.config || known.configuration }));
-        fulfil(type, known);
-        if (type === 'plan') return;
-      }
-    }
+    var v = VARIANTS[type] || VARIANTS.enquiry;
 
     document.getElementById('mKicker').textContent = v.kicker;
     document.getElementById('mTitle').textContent = v.title;
@@ -110,7 +99,7 @@ var CONFIG = {
     document.getElementById('mBtn').textContent = v.btn;
     if (current.config) { var sel = mForm.querySelector('select'); for (var i = 0; i < sel.options.length; i++) if (sel.options[i].text === current.config) sel.selectedIndex = i; }
 
-    if (!(known && (type === 'brochure' || type === 'costsheet'))) { mForm.hidden = false; mDone.hidden = true; mForm.querySelector('.form__msg').textContent = ''; }
+    mForm.hidden = false; mDone.hidden = true; mForm.querySelector('.form__msg').textContent = '';
     lastFocus = document.activeElement;
     modal.hidden = false; document.body.classList.add('no-scroll');
     sset('pr_popup_seen', '1', sessionStorage);
@@ -132,11 +121,11 @@ var CONFIG = {
   /* ---------- what happens after a successful submit ---------- */
   function fulfil(type, lead) {
     var title = 'Thank you, ' + (lead.name || '').split(' ')[0] + '!';
-    var text = 'Our relationship manager will call you shortly on +91 ' + lead.phone + '.';
+    var text = 'Our relationship manager will respond on WhatsApp at +91 ' + lead.phone + '.';
     var actions = '';
     if (type === 'brochure') {
       download(CONFIG.BROCHURE_URL, 'Promenade-Residences-Brochure.pdf');
-      text = 'Your brochure download has started. Our expert will also call you to answer any questions.';
+      text = 'Your brochure download has started. Our expert will respond on WhatsApp to answer any questions.';
       actions = '<a class="btn btn--navy" href="' + CONFIG.BROCHURE_URL + '" download>Download again</a>';
     } else if (type === 'costsheet') {
       if (CONFIG.COST_SHEET_URL) {
@@ -150,10 +139,9 @@ var CONFIG = {
     } else if (type === 'plan') {
       if (current.plan) { closeModal(); openLightbox(current.plan, (current.config || '') + ' floor plan'); return; }
     } else if (type === 'sitevisit') {
-      text = 'Your site visit request is received. We will call you to confirm the date and time.';
+      text = 'Your site visit request is received. We will message you on WhatsApp to confirm the date and time.';
     }
     if (!actions) actions = '<a class="btn btn--gold" target="_blank" rel="noopener" href="' + waLink('Hi, I just enquired about The Promenade Residences, Blue Ridge.') + '">Chat on WhatsApp now</a>';
-    actions += '<a class="btn btn--line" href="tel:+' + CONFIG.PHONE + '">Call +91 93097 07070</a>';
 
     document.getElementById('dTitle').textContent = title;
     document.getElementById('dText').textContent = text;
@@ -175,15 +163,18 @@ var CONFIG = {
     UTM_KEYS.forEach(function (k) { payload[k] = sget(k, sessionStorage) || ''; });
 
     if (!CONFIG.SCRIPT_URL || CONFIG.SCRIPT_URL.indexOf('PASTE_') === 0) {
-      console.warn('[Promenade] SCRIPT_URL not set – lead not saved:', payload);
-      return Promise.resolve();
+      return Promise.reject(new Error('Lead service unavailable'));
     }
     var body = new URLSearchParams(payload);
-    // keepalive lets the request finish even if the user navigates away / a download starts
-    return fetch(CONFIG.SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: body, keepalive: true })
-      .catch(function () {
-        // fallback for very old browsers / flaky networks
-        if (navigator.sendBeacon) navigator.sendBeacon(CONFIG.SCRIPT_URL, body);
+    return fetch(CONFIG.SCRIPT_URL, { method: 'POST', mode: 'cors', body: body, keepalive: true })
+      .then(function (response) {
+        if (!response.ok) throw new Error('Lead service unavailable');
+        return response.json();
+      })
+      .then(function (result) {
+        if (!result || (result.ok !== true && result.result !== 'ok')) {
+          throw new Error('Enquiry was not confirmed');
+        }
       });
   }
 
@@ -236,7 +227,7 @@ var CONFIG = {
       btn.disabled = true; btn.textContent = 'Submitting…';
 
       submitLead(lead).then(function () {
-        sset('pr_lead', JSON.stringify({ name: name, phone: phone, configuration: lead.configuration }));
+        sset('pr_lead_confirmed', JSON.stringify({ name: name, phone: phone, configuration: lead.configuration }));
         sset('pr_popup_seen', '1', sessionStorage);
         track('lead_submit', { form_type: type, configuration: lead.configuration });
         btn.disabled = false; btn.textContent = label;
@@ -245,8 +236,21 @@ var CONFIG = {
         else {
           form.reset();
           msg.className = 'form__msg ok';
-          msg.textContent = 'Thank you, ' + name.split(' ')[0] + '! Our expert will call you shortly.';
+          msg.textContent = 'Thank you, ' + name.split(' ')[0] + '! Our expert will respond on WhatsApp.';
         }
+      }).catch(function () {
+        btn.disabled = false; btn.textContent = label;
+        msg.className = 'form__msg';
+        msg.textContent = 'Your enquiry could not be saved. Please send it to us on WhatsApp. ';
+        var link = document.createElement('a');
+        var message = 'Hi, I am ' + lead.name + '. I am interested in ' + (lead.configuration || 'a home') +
+          ' at The Promenade Residences, Blue Ridge. My WhatsApp number is +91 ' + lead.phone + '.' +
+          ' Enquiry: ' + lead.form_type + '.' + (lead.message ? ' ' + lead.message : '');
+        link.href = waLink(message);
+        link.target = '_blank'; link.rel = 'noopener';
+        link.textContent = 'Continue on WhatsApp';
+        link.setAttribute('data-track', 'whatsapp_form_fallback');
+        msg.appendChild(link);
       });
     });
   });
@@ -254,7 +258,7 @@ var CONFIG = {
   /* ---------- timed popup (once per session, not for converted users) ---------- */
   if (CONFIG.AUTO_POPUP_SECONDS > 0) {
     setTimeout(function () {
-      if (sget('pr_popup_seen', sessionStorage) || sget('pr_lead') || !modal.hidden || !lb.hidden) return;
+      if (sget('pr_popup_seen', sessionStorage) || sget('pr_lead_confirmed') || !modal.hidden || !lb.hidden) return;
       openModal('auto');
     }, CONFIG.AUTO_POPUP_SECONDS * 1000);
   }
