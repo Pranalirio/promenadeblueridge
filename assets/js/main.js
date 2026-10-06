@@ -166,16 +166,12 @@ var CONFIG = {
       return Promise.reject(new Error('Lead service unavailable'));
     }
     var body = new URLSearchParams(payload);
-    return fetch(CONFIG.SCRIPT_URL, { method: 'POST', mode: 'cors', body: body, keepalive: true })
-      .then(function (response) {
-        if (!response.ok) throw new Error('Lead service unavailable');
-        return response.json();
-      })
-      .then(function (result) {
-        if (!result || (result.ok !== true && result.result !== 'ok')) {
-          throw new Error('Enquiry was not confirmed');
-        }
-      });
+   return fetch(CONFIG.SCRIPT_URL, {
+  method: 'POST',
+  mode: 'no-cors',
+  body: body,
+  keepalive: true
+});
   }
 
   function el(form, n) { return form.elements.namedItem(n); }
