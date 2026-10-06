@@ -169,8 +169,7 @@ var CONFIG = {
    return fetch(CONFIG.SCRIPT_URL, {
   method: 'POST',
   mode: 'no-cors',
-  body: body,
-  keepalive: true
+  body: body
 });
   }
 
