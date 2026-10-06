@@ -77,7 +77,7 @@ exports.handler = async function (event) {
           "API-Key": process.env.LEADRAT_API_KEY
         },
 
-        body: JSON.stringify(leadRatPayload)
+       body: JSON.stringify([leadRatPayload])
       }
     );
 
