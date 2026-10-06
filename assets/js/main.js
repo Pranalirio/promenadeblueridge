@@ -165,11 +165,12 @@ var CONFIG = {
     if (!CONFIG.SCRIPT_URL || CONFIG.SCRIPT_URL.indexOf('PASTE_') === 0) {
       return Promise.reject(new Error('Lead service unavailable'));
     }
-    var body = new URLSearchParams(payload);
    return fetch(CONFIG.SCRIPT_URL, {
   method: 'POST',
-  mode: 'no-cors',
-  body: body
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify(payload)
 });
   }
 
