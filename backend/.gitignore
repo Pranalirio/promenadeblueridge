@@ -1,0 +1,7 @@
+functions/node_modules/
+.firebase/
+*-debug.log*
+functions/.env*
+functions/.secret*
+*-credentials.json
+*-service-account.json

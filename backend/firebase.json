@@ -1,0 +1,9 @@
+{
+  "functions": [{
+    "source": "functions",
+    "codebase": "promenade-leads",
+    "runtime": "nodejs22",
+    "ignore": ["node_modules", ".git", "test", "*.log", ".env*", ".secret*"]
+  }],
+  "firestore": { "rules": "firestore.rules" }
+}
