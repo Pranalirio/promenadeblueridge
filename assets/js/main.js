@@ -4,7 +4,7 @@
    2) Optional: put a cost sheet PDF in assets/docs/ and set COST_SHEET_URL.
    ================================================================ */
 var CONFIG = {
-  SCRIPT_URL: 'PASTE_YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE',
+  SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbwx3dF2gEiEy0ECjsHQYgVHlLG3MZJIJr8uNDPI5wx0B4ad1zJwTSON1TKBoEjJE-YybA/exec',
   BROCHURE_URL: 'assets/docs/Promenade-Residences-Brochure.pdf',
   COST_SHEET_URL: '',            // e.g. 'assets/docs/Promenade-Cost-Sheet.pdf' – leave '' to share on WhatsApp instead
   PHONE: '919309707070',
