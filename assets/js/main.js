@@ -4,7 +4,7 @@
    2) Optional: put a cost sheet PDF in assets/docs/ and set COST_SHEET_URL.
    ================================================================ */
 var CONFIG = {
-  SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbwx3dF2gEiEy0ECjsHQYgVHlLG3MZJIJr8uNDPI5wx0B4ad1zJwTSON1TKBoEjJE-YybA/exec',
+  SCRIPT_URL: '/.netlify/functions/leadrat',
   BROCHURE_URL: 'assets/docs/Promenade-Residences-Brochure.pdf',
   COST_SHEET_URL: '',            // e.g. 'assets/docs/Promenade-Cost-Sheet.pdf' – leave '' to share on WhatsApp instead
   PHONE: '919309707070',
