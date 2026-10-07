@@ -165,13 +165,20 @@ var CONFIG = {
     if (!CONFIG.SCRIPT_URL || CONFIG.SCRIPT_URL.indexOf('PASTE_') === 0) {
       return Promise.reject(new Error('Lead service unavailable'));
     }
-   return fetch(CONFIG.SCRIPT_URL, {
+return fetch(CONFIG.SCRIPT_URL, {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json'
   },
   body: JSON.stringify(payload)
-});
+}).then(function (response) {
+  return response.json().then(function (result) {
+    if (!response.ok || !result || result.success !== true) {
+      throw new Error('Your enquiry could not be saved.');
+    }
+    return result;
+  });
+  });
   }
 
   function el(form, n) { return form.elements.namedItem(n); }
