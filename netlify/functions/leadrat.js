@@ -128,7 +128,7 @@ exports.handler = async function (event) {
           "Content-Type": "application/json"
         },
 
-        body: JSON.stringify(leadRatPayload)
+       body: JSON.stringify([leadRatPayload])
       }
     );
 
