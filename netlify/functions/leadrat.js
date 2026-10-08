@@ -1,25 +1,44 @@
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "https://promenadeblueridge.com",
+  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS"
+};
+
+const jsonResponse = (statusCode, data) => ({
+  statusCode,
+  headers: {
+    ...corsHeaders,
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify(data)
+});
+
 exports.handler = async function (event) {
 
-  // Only POST requests are allowed
-  if (event.httpMethod !== "POST") {
+  // Handle browser CORS preflight
+  if (event.httpMethod === "OPTIONS") {
     return {
-      statusCode: 405,
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        success: false,
-        message: "Method not allowed"
-      })
+      statusCode: 204,
+      headers: corsHeaders,
+      body: ""
     };
   }
 
-  try {
+  // Only POST requests are allowed
+  if (event.httpMethod !== "POST") {
+    return jsonResponse(405, {
+      success: false,
+      message: "Method not allowed"
+    });
+  }
 
+  try {
     const data = JSON.parse(event.body || "{}");
 
-    const name = (data.name || "").trim();
-    const mobile = (data.phone || data.mobile || "")
+    const name = String(data.name || "").trim();
+
+    const mobile = String(data.phone || data.mobile || "")
       .replace(/\D/g, "")
       .slice(-10);
 
@@ -30,19 +49,13 @@ exports.handler = async function (event) {
 
     // Basic validation
     if (!name || mobile.length !== 10) {
-      return {
-        statusCode: 400,
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          success: false,
-          message: "Valid name and 10-digit mobile number are required"
-        })
-      };
+      return jsonResponse(400, {
+        success: false,
+        message: "Valid name and 10-digit mobile number are required"
+      });
     }
 
-    // Current Indian date/time
+    // Indian date and time
     const now = new Date();
 
     const submittedDate = new Intl.DateTimeFormat("en-GB", {
@@ -81,11 +94,9 @@ exports.handler = async function (event) {
       mobile: mobile,
 
       project: "The Promenade Residences - Blue Ridge",
-
       property: "The Promenade Residences - Blue Ridge",
 
       leadExpectedBudget: "",
-
       propertyType: "Flat",
 
       submittedDate: submittedDate,
@@ -99,9 +110,7 @@ exports.handler = async function (event) {
         "Website Landing Page",
 
       leadStatus: "",
-
       callRecordingUrl: "",
-
       scheduledDate: "",
 
       additionalProperties: {
@@ -111,76 +120,54 @@ exports.handler = async function (event) {
       }
     };
 
-    console.log(
-      "Sending LeadRat payload:",
-      JSON.stringify(leadRatPayload)
-    );
+    // Never log customer personal information
+    // or your LeadRat API key.
 
-    // IMPORTANT:
-    // LeadRat documentation shows the request body as a JSON object.
+    if (!process.env.LEADRAT_API_KEY) {
+      console.error("LEADRAT_API_KEY is missing");
+      return jsonResponse(500, {
+        success: false,
+        message: "Lead service configuration error"
+      });
+    }
+
+    // LeadRat expects an array of lead objects
     const response = await fetch(
       "https://connect.leadrat.com/api/v1/integration/Website",
       {
         method: "POST",
-
         headers: {
           "API-Key": process.env.LEADRAT_API_KEY,
           "Content-Type": "application/json"
         },
-
-       body: JSON.stringify([leadRatPayload])
+        body: JSON.stringify([leadRatPayload])
       }
     );
 
     const responseText = await response.text();
 
-    console.log(
-      "LeadRat response:",
-      response.status,
-      responseText
-    );
+    console.log("LeadRat HTTP status:", response.status);
 
     if (!response.ok) {
-      return {
-        statusCode: 502,
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          success: false,
-          message: "LeadRat rejected the lead",
-          leadRatStatus: response.status,
-          details: responseText
-        })
-      };
+      return jsonResponse(502, {
+        success: false,
+        message: "LeadRat rejected the lead",
+        leadRatStatus: response.status
+      });
     }
 
-    return {
-      statusCode: 200,
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        success: true,
-        message: "Lead successfully sent to LeadRat",
-        leadRatResponse: responseText
-      })
-    };
+    return jsonResponse(200, {
+      success: true,
+      message: "Lead successfully sent to LeadRat"
+    });
 
   } catch (error) {
+    console.error("LeadRat function failed:", error.name);
 
-    console.error("Function error:", error);
-
-    return {
-      statusCode: 500,
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        success: false,
-        message: "Server error",
-        error: error.message
-      })
-    };
+    return jsonResponse(500, {
+      success: false,
+      message: "Server error while processing enquiry"
+    });
   }
 };
+
